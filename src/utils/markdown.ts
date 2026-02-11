@@ -29,17 +29,25 @@ function renderNode(node: MarkdownNode, indent: number = 0): string {
     
     case 'heading': {
       const text = renderChildren(node, indent);
-      const headingColors = [
-        chalk.bold.yellow,
-        chalk.bold.cyan,
-        chalk.bold.magenta,
-        chalk.bold.blue,
-        chalk.bold.green,
-        chalk.bold.white,
+      const depth = node.depth || 1;
+      const headingStyles = [
+        // H1: Bold yellow with underline
+        (t: string) => chalk.bold.yellow.underline(t),
+        // H2: Bold cyan 
+        (t: string) => chalk.bold.cyan(t),
+        // H3: Bold magenta
+        (t: string) => chalk.bold.magenta(t),
+        // H4: Bold blue
+        (t: string) => chalk.bold.blue(t),
+        // H5: Bold green
+        (t: string) => chalk.bold.green(t),
+        // H6: Bold white
+        (t: string) => chalk.bold.white(t),
       ];
-      const colorFn = headingColors[Math.min((node.depth || 1) - 1, 5)];
-      const prefix = '#'.repeat(node.depth || 1) + ' ';
-      return colorFn(prefix + text);
+      const styleFn = headingStyles[Math.min(depth - 1, 5)];
+      // Add extra spacing for top-level headings
+      const prefix = depth <= 2 ? '\n' : '';
+      return prefix + styleFn(text);
     }
     
     case 'paragraph':
