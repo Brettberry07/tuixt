@@ -11,6 +11,7 @@ export interface Note {
   user_id: string;
   title: string;
   content: string;
+  date?: string | null;  // ISO date string (YYYY-MM-DD) for calendar association
   created_at: string;
   updated_at: string;
 }
@@ -44,11 +45,13 @@ export interface Card {
 export interface CreateNoteInput {
   title: string;
   content: string;
+  date?: string | null;  // ISO date string (YYYY-MM-DD)
 }
 
 export interface UpdateNoteInput {
   title?: string;
   content?: string;
+  date?: string | null;  // ISO date string (YYYY-MM-DD)
 }
 
 export interface CreateBoardInput {
@@ -88,7 +91,8 @@ export type Screen =
   | 'note-editor'
   | 'boards'
   | 'board-view'
-  | 'card-editor';
+  | 'card-editor'
+  | 'calendar';
 
 export interface AppState {
   currentScreen: Screen;
@@ -124,4 +128,13 @@ export interface BoardWithColumns extends Board {
 
 export interface ColumnWithCards extends Column {
   cards: Card[];
+}
+
+// Calendar types
+export interface CalendarDay {
+  date: string;  // ISO date string (YYYY-MM-DD)
+  day: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  notes: Note[];
 }

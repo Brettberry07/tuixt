@@ -5,3 +5,4 @@ export { NoteEditorScreen } from './NoteEditorScreen.js';
 export { BoardsListScreen } from './BoardsListScreen.js';
 export { BoardViewScreen } from './BoardViewScreen.js';
 export { CardEditorScreen } from './CardEditorScreen.js';
+export { CalendarScreen } from './CalendarScreen.js';

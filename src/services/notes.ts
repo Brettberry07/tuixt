@@ -40,13 +40,19 @@ export async function createNote(input: CreateNoteInput): Promise<ServiceResult<
     return { data: null, error: 'Not authenticated' };
   }
   
+  const insertData: Record<string, unknown> = {
+    user_id: userData.user.id,
+    title: input.title,
+    content: input.content,
+  };
+  
+  if (input.date !== undefined) {
+    insertData.date = input.date;
+  }
+  
   const { data, error } = await supabase
     .from('notes')
-    .insert({
-      user_id: userData.user.id,
-      title: input.title,
-      content: input.content,
-    })
+    .insert(insertData)
     .select()
     .single();
   
@@ -72,6 +78,9 @@ export async function updateNote(
   }
   if (input.content !== undefined) {
     updateData.content = input.content;
+  }
+  if (input.date !== undefined) {
+    updateData.date = input.date;
   }
   
   const { data, error } = await supabase
@@ -108,6 +117,42 @@ export async function searchNotes(query: string): Promise<ServiceResult<Note[]>>
     .select('*')
     .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
     .order('updated_at', { ascending: false });
+  
+  if (error) {
+    return { data: null, error: error.message };
+  }
+  
+  return { data: data as Note[], error: null };
+}
+
+export async function fetchNotesByDate(date: string): Promise<ServiceResult<Note[]>> {
+  const supabase = getSupabaseClient();
+  
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .eq('date', date)
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    return { data: null, error: error.message };
+  }
+  
+  return { data: data as Note[], error: null };
+}
+
+export async function fetchNotesByDateRange(
+  startDate: string,
+  endDate: string
+): Promise<ServiceResult<Note[]>> {
+  const supabase = getSupabaseClient();
+  
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true });
   
   if (error) {
     return { data: null, error: error.message };

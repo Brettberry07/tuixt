@@ -10,6 +10,7 @@ import {
   BoardsListScreen,
   BoardViewScreen,
   CardEditorScreen,
+  CalendarScreen,
 } from './screens/index.js';
 
 function AppContent() {
@@ -51,6 +52,8 @@ function AppContent() {
       return <BoardViewScreen />;
     case 'card-editor':
       return <CardEditorScreen />;
+    case 'calendar':
+      return <CalendarScreen />;
     default:
       return <DashboardScreen />;
   }

@@ -13,6 +13,7 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   { key: 'notes', label: 'Notes', shortcut: 'n' },
   { key: 'boards', label: 'Boards', shortcut: 'b' },
+  { key: 'calendar', label: 'Calendar', shortcut: 'l' },
   { key: 'create-note', label: 'Create Note', shortcut: 'c' },
   { key: 'create-board', label: 'Create Board', shortcut: 'k' },
   { key: 'logout', label: 'Logout', shortcut: 'q' },
@@ -31,6 +32,9 @@ export function DashboardScreen() {
           break;
         case 'boards':
           navigate('boards');
+          break;
+        case 'calendar':
+          navigate('calendar');
           break;
         case 'create-note':
           navigate('note-editor');
@@ -95,6 +99,9 @@ export function DashboardScreen() {
               </Text>
               <Text>
                 <Text color="cyan">[b]</Text> View Boards
+              </Text>
+              <Text>
+                <Text color="cyan">[l]</Text> View Calendar
               </Text>
               <Text>
                 <Text color="cyan">[c]</Text> Create Note
