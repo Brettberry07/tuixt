@@ -17,7 +17,7 @@ export function NoteEditorScreen() {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [mode, setMode] = useState<Mode>('edit');
+  const [mode, setMode] = useState<Mode>(selectedNoteId ? 'preview' : 'edit');
   const [focusedField, setFocusedField] = useState<FocusField>('title');
   const [message, setMessage] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);

@@ -336,28 +336,29 @@ export function CalendarScreen() {
                     borderStyle={isSelected ? 'single' : undefined}
                     borderColor={isSelected ? 'cyan' : undefined}
                   >
-                    <Box flexDirection="row" alignItems="center">
+                    <Text
+                      color={
+                        !day.isCurrentMonth
+                          ? 'gray'
+                          : day.isToday
+                          ? 'yellow'
+                          : isSelected
+                          ? 'cyan'
+                          : undefined
+                      }
+                      bold={day.isToday || isSelected}
+                      inverse={day.isToday && isSelected}
+                    >
+                      {String(day.day).padStart(2, ' ')}
+                    </Text>
+                    {hasNotes && day.notes.length > 0 && (
                       <Text
-                        color={
-                          !day.isCurrentMonth
-                            ? 'gray'
-                            : day.isToday
-                            ? 'yellow'
-                            : isSelected
-                            ? 'cyan'
-                            : undefined
-                        }
-                        bold={day.isToday || isSelected}
-                        inverse={day.isToday && isSelected}
+                        color={!day.isCurrentMonth ? 'gray' : 'green'}
+                        dimColor
                       >
-                        {String(day.day).padStart(2, ' ')}
+                        {truncateText(day.notes[0].title, 8)}
                       </Text>
-                      {hasNotes && (
-                        <Text color="green" dimColor={!day.isCurrentMonth}>
-                          •
-                        </Text>
-                      )}
-                    </Box>
+                    )}
                   </Box>
                 );
               })}
