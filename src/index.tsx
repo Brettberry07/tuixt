@@ -6,7 +6,7 @@ import { App } from './app.js';
 // Clear the screen and render the app
 console.clear();
 
-const { waitUntilExit } = render(<App />, { fullScreen: true });
+const { waitUntilExit } = render(<App />);
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {

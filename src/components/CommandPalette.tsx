@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { searchCommands, type Command } from '../utils/commands.js';
 import { useApp } from '../context/index.js';
+import { createNote } from '../services/notes.js';
+import { createTodo } from '../services/todos.js';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -9,15 +11,62 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
-  const { navigate, selectNote, selectTodo, selectBoard, selectCard } = useApp();
+  const { navigate, selectNote, selectTodo, selectBoard, selectCard, setError } = useApp();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [filteredCommands, setFilteredCommands] = useState<Command[]>([]);
+  const [quickActionPreview, setQuickActionPreview] = useState<string | null>(null);
 
-  // Update filtered commands when query changes
+  // Parse quick action from query
+  const parseQuickAction = (input: string): { type: 'note' | 'todo' | 'pomodoro' | null; title: string; content?: string } => {
+    const trimmed = input.trim();
+    
+    // Pattern: "start pomodoro" or "pomodoro" or "pomo"
+    const pomodoroMatch = trimmed.match(/^(?:start\s+)?(?:pomodoro|pomo)(?:\s+start)?$/i);
+    if (pomodoroMatch) {
+      return { type: 'pomodoro', title: '' };
+    }
+    
+    // Pattern: "new note <title> <content>"
+    const noteMatch = trimmed.match(/^(?:new\s+)?note\s+(.+)$/i);
+    if (noteMatch) {
+      const rest = noteMatch[1].trim();
+      // Split on first occurrence of two spaces or pipe to separate title from content
+      const splitMatch = rest.match(/^([^|]+)(?:\||\s{2,})(.+)$/);
+      if (splitMatch) {
+        return { type: 'note', title: splitMatch[1].trim(), content: splitMatch[2].trim() };
+      }
+      return { type: 'note', title: rest, content: '' };
+    }
+    
+    // Pattern: "new todo <title>"
+    const todoMatch = trimmed.match(/^(?:new\s+)?todo\s+(.+)$/i);
+    if (todoMatch) {
+      return { type: 'todo', title: todoMatch[1].trim() };
+    }
+    
+    return { type: null, title: '' };
+  };
+
+  // Update filtered commands and quick action preview when query changes
   useEffect(() => {
-    const results = searchCommands(query);
-    setFilteredCommands(results);
+    const quickAction = parseQuickAction(query);
+    
+    if (quickAction.type === 'note') {
+      setQuickActionPreview(`⚡ Quick create note: "${quickAction.title}"${quickAction.content ? ` with content` : ''}`);
+      setFilteredCommands([]);
+    } else if (quickAction.type === 'todo') {
+      setQuickActionPreview(`⚡ Quick create todo: "${quickAction.title}"`);
+      setFilteredCommands([]);
+    } else if (quickAction.type === 'pomodoro') {
+      setQuickActionPreview(`⚡ Quick start Pomodoro timer`);
+      setFilteredCommands([]);
+    } else {
+      setQuickActionPreview(null);
+      const results = searchCommands(query);
+      setFilteredCommands(results);
+    }
+    
     setSelectedIndex(0); // Reset selection when results change
   }, [query]);
 
@@ -43,6 +92,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       }
 
       if (key.return) {
+        // Check for quick actions first
+        const quickAction = parseQuickAction(query);
+        if (quickAction.type) {
+          executeQuickAction(quickAction);
+          return;
+        }
+        
+        // Otherwise execute selected command
         const command = filteredCommands[selectedIndex];
         if (command) {
           executeCommand(command);
@@ -63,10 +120,50 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     { isActive: isOpen }
   );
 
+  const executeQuickAction = async (action: { type: 'note' | 'todo' | 'pomodoro' | null; title: string; content?: string }) => {
+    // Reset state
+    setQuery('');
+    setSelectedIndex(0);
+    setQuickActionPreview(null);
+    onClose();
+
+    if (action.type === 'note') {
+      const result = await createNote({
+        title: action.title,
+        content: action.content || '',
+      });
+      
+      if (result.error) {
+        setError(result.error);
+      } else if (result.data) {
+        // Navigate to the newly created note
+        selectNote(result.data.id);
+        navigate('note-editor');
+      }
+    } else if (action.type === 'todo') {
+      const result = await createTodo({
+        title: action.title,
+        description: '',
+        status: 'todo',
+      });
+      
+      if (result.error) {
+        setError(result.error);
+      } else {
+        // Navigate to todos list to see the new todo
+        navigate('todos');
+      }
+    } else if (action.type === 'pomodoro') {
+      // Navigate to pomodoro timer
+      navigate('pomodoro');
+    }
+  };
+
   const executeCommand = (command: Command) => {
     // Reset state
     setQuery('');
     setSelectedIndex(0);
+    setQuickActionPreview(null);
     onClose();
 
     // Execute the command action
@@ -137,9 +234,29 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
         {/* Results */}
         <Box flexDirection="column">
-          {filteredCommands.length === 0 ? (
-            <Box>
-              <Text dimColor>No commands found. Try a different search.</Text>
+          {quickActionPreview ? (
+            <Box flexDirection="column">
+              <Box backgroundColor="green" paddingX={1}>
+                <Text bold color="black">Quick Action Ready</Text>
+              </Box>
+              <Box marginTop={1} paddingX={1}>
+                <Text color="green">{quickActionPreview}</Text>
+              </Box>
+              <Box marginTop={1} paddingX={1}>
+                <Text dimColor>Press Enter to create</Text>
+              </Box>
+            </Box>
+          ) : filteredCommands.length === 0 ? (
+            <Box flexDirection="column">
+              <Text dimColor>No commands found.</Text>
+              <Box marginTop={1}>
+                <Text dimColor>Try: </Text>
+                <Text color="cyan">note Title | Content</Text>
+                <Text dimColor> or </Text>
+                <Text color="cyan">todo Task name</Text>
+                <Text dimColor> or </Text>
+                <Text color="cyan">start pomodoro</Text>
+              </Box>
             </Box>
           ) : (
             filteredCommands.slice(0, 10).map((command, index) => {
@@ -188,7 +305,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         </Box>
 
         {/* Footer */}
-        {filteredCommands.length > 10 && (
+        {!quickActionPreview && filteredCommands.length > 10 && (
           <Box marginTop={1}>
             <Text dimColor>
               Showing 10 of {filteredCommands.length} results
@@ -197,10 +314,15 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         )}
 
         {/* Hints */}
-        <Box marginTop={1} borderTop borderStyle="single" paddingTop={1}>
+        <Box marginTop={1} borderTop borderStyle="single" paddingTop={1} flexDirection="column">
           <Text dimColor>
             ↑↓ Navigate • Enter Select • Esc Close
           </Text>
+          {!quickActionPreview && (
+            <Text dimColor>
+              Quick: <Text color="cyan">note Title|Content</Text> • <Text color="cyan">todo Task</Text> • <Text color="cyan">pomo</Text>
+            </Text>
+          )}
         </Box>
       </Box>
     </Box>
