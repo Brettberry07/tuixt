@@ -15,6 +15,7 @@ import { truncateText } from '../utils/markdown.js';
 import type { BoardWithColumns, ColumnWithCards, Card, Column } from '../types/index.js';
 
 type Mode = 'navigate' | 'create-column' | 'create-card' | 'move-card';
+type ViewMode = 'table' | 'kanban';
 
 interface PendingColumn {
   tempId: string;
@@ -46,8 +47,11 @@ export function BoardViewScreen() {
   const [board, setBoard] = useState<BoardWithColumns | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('table'); // Default to table view
   const [selectedColumnIndex, setSelectedColumnIndex] = useState(0);
   const [selectedCardIndex, setSelectedCardIndex] = useState(0);
+  const [selectedTableColumn, setSelectedTableColumn] = useState(0); // For table view column selection
+  const [selectedTableRow, setSelectedTableRow] = useState(0); // For table view row selection within column
   const [mode, setMode] = useState<Mode>('navigate');
   const [inputValue, setInputValue] = useState('');
   const [confirmDeleteCard, setConfirmDeleteCard] = useState<Card | null>(null);
@@ -370,7 +374,69 @@ export function BoardViewScreen() {
       return;
     }
 
-    // Handle input modes
+    // Global: Toggle view mode
+    if (input === 'v') {
+      setViewMode((prev) => {
+        const newMode = prev === 'table' ? 'kanban' : 'table';
+        // Reset selection when switching views
+        if (newMode === 'table') {
+          setSelectedTableColumn(0);
+          setSelectedTableRow(0);
+        } else {
+          setSelectedColumnIndex(0);
+          setSelectedCardIndex(0);
+        }
+        return newMode;
+      });
+      return;
+    }
+
+    // Table view mode - simplified navigation
+    if (viewMode === 'table') {
+      if (!mergedBoard) return;
+      
+      if (key.escape) {
+        navigate('boards');
+      } else if (key.leftArrow) {
+        setSelectedTableColumn((prev) => {
+          const newCol = prev > 0 ? prev - 1 : mergedBoard.columns.length - 1;
+          setSelectedTableRow(0); // Reset row when changing columns
+          return newCol;
+        });
+      } else if (key.rightArrow) {
+        setSelectedTableColumn((prev) => {
+          const newCol = prev < mergedBoard.columns.length - 1 ? prev + 1 : 0;
+          setSelectedTableRow(0); // Reset row when changing columns
+          return newCol;
+        });
+      } else if (key.upArrow) {
+        const currentColumn = mergedBoard.columns[selectedTableColumn];
+        if (currentColumn && currentColumn.cards.length > 0) {
+          setSelectedTableRow((prev) => 
+            prev > 0 ? prev - 1 : currentColumn.cards.length - 1
+          );
+        }
+      } else if (key.downArrow) {
+        const currentColumn = mergedBoard.columns[selectedTableColumn];
+        if (currentColumn && currentColumn.cards.length > 0) {
+          setSelectedTableRow((prev) => 
+            prev < currentColumn.cards.length - 1 ? prev + 1 : 0
+          );
+        }
+      } else if (key.return) {
+        const currentColumn = mergedBoard.columns[selectedTableColumn];
+        const card = currentColumn?.cards[selectedTableRow];
+        if (card && !card.id.startsWith('temp_')) {
+          selectCard(card.id);
+          navigate('card-editor');
+        }
+      } else if (input === 'r') {
+        loadBoard();
+      }
+      return;
+    }
+
+    // Handle input modes (Kanban only)
     if (mode === 'create-column' || mode === 'create-card') {
       if (key.escape) {
         setMode('navigate');
@@ -473,7 +539,7 @@ export function BoardViewScreen() {
         subtitle={
           hasUnsavedChanges
             ? 'Unsaved changes - Ctrl+S to save'
-            : `${mergedBoard.columns.length} columns`
+            : `${mergedBoard.columns.length} columns • ${viewMode === 'table' ? 'Table View' : 'Kanban View'}`
         }
       />
 
@@ -485,59 +551,165 @@ export function BoardViewScreen() {
         </Box>
       )}
 
-      {/* Input area */}
-      {(mode === 'create-column' || mode === 'create-card') && (
-        <Box paddingX={2} marginBottom={1} flexDirection="column">
-          <Text bold color="cyan">
-            {mode === 'create-column' ? 'New Column Title:' : 'New Card Title:'}
-          </Text>
-          <Box>
-            <Text dimColor>{'> '}</Text>
-            <InkTextInput
-              value={inputValue}
-              onChange={setInputValue}
-              placeholder={
-                mode === 'create-column'
-                  ? 'Enter column title...'
-                  : 'Enter card title...'
-              }
-            />
-          </Box>
-        </Box>
-      )}
+      {/* View mode indicator */}
+      <Box paddingX={2} marginBottom={1}>
+        <Text dimColor>
+          {viewMode === 'table' ? '📊 Table View' : '📋 Kanban View'} • Press [v] to toggle
+        </Text>
+      </Box>
 
-      {/* Move card mode */}
-      {mode === 'move-card' && (
-        <Box paddingX={2} marginBottom={1}>
-          <Text bold color="cyan">
-            Move to column:{' '}
-          </Text>
-          <Text color="yellow" bold>
-            {mergedBoard.columns[moveTargetColumn]?.title || 'Unknown'}
-          </Text>
-          <Text dimColor> (← → to select, Enter to confirm)</Text>
-        </Box>
-      )}
-
-      {/* Delete confirmation */}
-      {confirmDeleteCard ? (
-        <Box padding={2}>
-          <ConfirmModal
-            title="Delete Card"
-            message={`Are you sure you want to delete "${confirmDeleteCard.title}"?`}
-            onConfirm={handleDeleteCardLocal}
-            onCancel={() => setConfirmDeleteCard(null)}
-          />
-        </Box>
-      ) : (
-        /* Kanban columns */
-        <Box flexGrow={1} paddingX={1}>
+      {/* Table View */}
+      {viewMode === 'table' && !confirmDeleteCard && (
+        <Box flexDirection="column" flexGrow={1} paddingX={2}>
           {mergedBoard.columns.length === 0 ? (
             <Box padding={2}>
-              <Text dimColor>No columns yet. Press [c] to create one.</Text>
+              <Text dimColor>No columns yet. Switch to Kanban view [v] to create columns.</Text>
             </Box>
           ) : (
-            mergedBoard.columns.map((column, colIndex) => {
+            <>
+              {/* Table Header - Show column titles */}
+              <Box borderStyle="double" borderColor="cyan" paddingX={1} marginBottom={1}>
+                {mergedBoard.columns.map((column, colIndex) => {
+                  const isSelected = colIndex === selectedTableColumn;
+                  const columnWidth = Math.floor(100 / mergedBoard.columns.length);
+                  const isPending = column.id.startsWith('temp_');
+                  
+                  return (
+                    <Box key={column.id} width={`${columnWidth}%`} paddingX={1}>
+                      <Text 
+                        bold 
+                        color={isSelected ? 'yellow' : 'cyan'}
+                        underline={isSelected}
+                      >
+                        {truncateText(column.title, 20)}
+                      </Text>
+                      <Text dimColor> ({column.cards.length})</Text>
+                      {isPending && <Text color="yellow"> *</Text>}
+                    </Box>
+                  );
+                })}
+              </Box>
+
+              {/* Table Body - Show cards in columns */}
+              <Box flexGrow={1}>
+                {(() => {
+                  // Find the maximum number of cards in any column for row count
+                  const maxRows = Math.max(
+                    ...mergedBoard.columns.map(col => col.cards.length),
+                    1
+                  );
+                  
+                  return (
+                    <Box flexDirection="column">
+                      {Array.from({ length: maxRows }).map((_, rowIndex) => (
+                        <Box key={rowIndex} marginBottom={1}>
+                          {mergedBoard.columns.map((column, colIndex) => {
+                            const columnWidth = Math.floor(100 / mergedBoard.columns.length);
+                            const card = column.cards[rowIndex];
+                            const isSelected = 
+                              colIndex === selectedTableColumn && 
+                              rowIndex === selectedTableRow &&
+                              card !== undefined;
+                            
+                            return (
+                              <Box 
+                                key={`${column.id}-${rowIndex}`}
+                                width={`${columnWidth}%`}
+                                paddingX={1}
+                                borderStyle={isSelected ? 'round' : undefined}
+                                borderColor={isSelected ? 'yellow' : undefined}
+                              >
+                                {card ? (
+                                  <Box flexDirection="column" width="100%">
+                                    <Text 
+                                      color={isSelected ? 'yellow' : undefined}
+                                      bold={isSelected}
+                                    >
+                                      {isSelected ? '▶ ' : ''}
+                                      {truncateText(card.title, 18)}
+                                      {card.id.startsWith('temp_') && (
+                                        <Text color="yellow"> *</Text>
+                                      )}
+                                    </Text>
+                                    {card.description && (
+                                      <Text dimColor={!isSelected} wrap="truncate">
+                                        {truncateText(card.description, 18)}
+                                      </Text>
+                                    )}
+                                  </Box>
+                                ) : (
+                                  <Text dimColor>—</Text>
+                                )}
+                              </Box>
+                            );
+                          })}
+                        </Box>
+                      ))}
+                    </Box>
+                  );
+                })()}
+              </Box>
+            </>
+          )}
+        </Box>
+      )}
+
+      {/* Kanban View */}
+      {viewMode === 'kanban' && (
+        <>
+          {/* Input area */}
+          {(mode === 'create-column' || mode === 'create-card') && (
+            <Box paddingX={2} marginBottom={1} flexDirection="column">
+              <Text bold color="cyan">
+                {mode === 'create-column' ? 'New Column Title:' : 'New Card Title:'}
+              </Text>
+              <Box>
+                <Text dimColor>{'> '}</Text>
+                <InkTextInput
+                  value={inputValue}
+                  onChange={setInputValue}
+                  placeholder={
+                    mode === 'create-column'
+                      ? 'Enter column title...'
+                      : 'Enter card title...'
+                  }
+                />
+              </Box>
+            </Box>
+          )}
+
+          {/* Move card mode */}
+          {mode === 'move-card' && (
+            <Box paddingX={2} marginBottom={1}>
+              <Text bold color="cyan">
+                Move to column:{' '}
+              </Text>
+              <Text color="yellow" bold>
+                {mergedBoard.columns[moveTargetColumn]?.title || 'Unknown'}
+              </Text>
+              <Text dimColor> (← → to select, Enter to confirm)</Text>
+            </Box>
+          )}
+
+          {/* Delete confirmation */}
+          {confirmDeleteCard ? (
+            <Box padding={2}>
+              <ConfirmModal
+                title="Delete Card"
+                message={`Are you sure you want to delete "${confirmDeleteCard.title}"?`}
+                onConfirm={handleDeleteCardLocal}
+                onCancel={() => setConfirmDeleteCard(null)}
+              />
+            </Box>
+          ) : (
+            /* Kanban columns */
+            <Box flexGrow={1} paddingX={1}>
+              {mergedBoard.columns.length === 0 ? (
+                <Box padding={2}>
+                  <Text dimColor>No columns yet. Press [c] to create one.</Text>
+                </Box>
+              ) : (
+                mergedBoard.columns.map((column, colIndex) => {
               const isSelectedColumn = colIndex === selectedColumnIndex;
               const columnWidth = Math.floor(100 / mergedBoard.columns.length);
               const isPending = column.id.startsWith('temp_');
@@ -610,11 +782,15 @@ export function BoardViewScreen() {
           )}
         </Box>
       )}
+        </>
+      )}
 
       <StatusBar
         error={error}
         hints={
-          mode === 'create-column' || mode === 'create-card'
+          viewMode === 'table'
+            ? ['← → Columns', '↑↓ Cards', 'Enter View', 'v Toggle View', 'r Refresh', 'Esc Back']
+            : mode === 'create-column' || mode === 'create-card'
             ? ['Enter Create', 'Esc Cancel']
             : mode === 'move-card'
             ? ['← → Select column', 'Enter Confirm', 'Esc Cancel']
@@ -626,6 +802,7 @@ export function BoardViewScreen() {
                 'c Column',
                 'm Move',
                 'd Delete',
+                'v Toggle View',
                 'Ctrl+S Save',
                 'Esc Back',
               ]
