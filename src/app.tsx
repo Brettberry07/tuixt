@@ -83,9 +83,7 @@ function AppContent() {
   return (
     <Box flexDirection="column" height="100%" position="relative">
       {/* Render screen */}
-      <Box flexGrow={1}>
-        {currentScreenElement}
-      </Box>
+      {currentScreenElement}
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
@@ -98,9 +96,7 @@ export function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        <Box flexDirection="column" height="100%">
-          <AppContent />
-        </Box>
+        <AppContent />
       </AppProvider>
     </AuthProvider>
   );
