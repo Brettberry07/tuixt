@@ -10,7 +10,7 @@ import type { Board } from '../types/index.js';
 type Mode = 'list' | 'create';
 
 export function BoardsListScreen() {
-  const { navigate, selectBoard, setError, error } = useApp();
+  const { navigate, selectBoard, setError, error, isCommandPaletteOpen } = useApp();
   const [boards, setBoards] = useState<Board[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -100,7 +100,7 @@ export function BoardsListScreen() {
     } else if (input === 'r') {
       loadBoards();
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (isLoading) {
     return (

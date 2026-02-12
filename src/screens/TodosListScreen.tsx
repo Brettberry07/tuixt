@@ -21,7 +21,7 @@ const STATUS_LABELS: Record<TodoStatus, string> = {
 };
 
 export function TodosListScreen() {
-  const { navigate, selectTodo, setError, error } = useApp();
+  const { navigate, selectTodo, setError, error, isCommandPaletteOpen } = useApp();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filteredTodos, setFilteredTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -161,7 +161,7 @@ export function TodosListScreen() {
     } else if (input === 'r') {
       loadTodos();
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (isLoading) {
     return (

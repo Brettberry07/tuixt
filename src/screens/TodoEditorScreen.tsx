@@ -17,7 +17,7 @@ type FocusField = 'title' | 'description' | 'status' | 'due_date' | 'notes';
 const STATUS_OPTIONS: TodoStatus[] = ['todo', 'in-progress', 'done', 'cancelled'];
 
 export function TodoEditorScreen() {
-  const { selectedTodoId, navigate, selectTodo, setError, error } = useApp();
+  const { selectedTodoId, navigate, selectTodo, setError, error, isCommandPaletteOpen } = useApp();
   const [todo, setTodo] = useState<TodoWithNotes | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -258,7 +258,7 @@ export function TodoEditorScreen() {
         }
       }
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (isLoading) {
     return (

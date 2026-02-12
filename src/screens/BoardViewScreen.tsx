@@ -43,7 +43,7 @@ interface PendingDelete {
 }
 
 export function BoardViewScreen() {
-  const { selectedBoardId, navigate, selectCard, setError, error } = useApp();
+  const { selectedBoardId, navigate, selectCard, setError, error, isCommandPaletteOpen } = useApp();
   const [board, setBoard] = useState<BoardWithColumns | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -521,7 +521,7 @@ export function BoardViewScreen() {
     } else if (input === 'r') {
       loadBoard();
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (isLoading || !mergedBoard) {
     return (

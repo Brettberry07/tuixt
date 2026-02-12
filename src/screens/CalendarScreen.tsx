@@ -25,7 +25,7 @@ const MONTHS = [
 ];
 
 export function CalendarScreen() {
-  const { navigate, selectNote, setError, error } = useApp();
+  const { navigate, selectNote, setError, error, isCommandPaletteOpen } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -245,7 +245,7 @@ export function CalendarScreen() {
     } else if (input === 't') {
       goToToday();
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (isLoading) {
     return (

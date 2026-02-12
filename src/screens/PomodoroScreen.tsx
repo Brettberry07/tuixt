@@ -16,7 +16,7 @@ interface PomodoroSettings {
 type SettingsField = 'work' | 'shortBreak' | 'longBreak' | 'sessions';
 
 export function PomodoroScreen() {
-  const { navigate, error } = useApp();
+  const { navigate, error, isCommandPaletteOpen } = useApp();
   
   // Settings
   const [settings, setSettings] = useState<PomodoroSettings>({
@@ -208,7 +208,7 @@ export function PomodoroScreen() {
     } else if (input === 'c') {
       setViewMode('settings');
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);

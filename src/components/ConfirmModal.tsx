@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
+import { useApp } from '../context/index.js';
 
 interface ConfirmModalProps {
   title: string;
@@ -14,13 +15,15 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  const { isCommandPaletteOpen } = useApp();
+
   useInput((input, key) => {
     if (input.toLowerCase() === 'y' || key.return) {
       onConfirm();
     } else if (input.toLowerCase() === 'n' || key.escape) {
       onCancel();
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   return (
     <Box

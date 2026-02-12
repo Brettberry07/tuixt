@@ -10,7 +10,7 @@ type Mode = 'edit' | 'preview';
 type FocusField = 'title' | 'content';
 
 export function NoteEditorScreen() {
-  const { selectedNoteId, navigate, selectNote, setError, error } = useApp();
+  const { selectedNoteId, navigate, selectNote, setError, error, isCommandPaletteOpen } = useApp();
   const { stdout } = useStdout();
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
@@ -252,7 +252,7 @@ export function NoteEditorScreen() {
         return;
       }
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (isLoading) {
     return (

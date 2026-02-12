@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Header, InputField, StatusBar, LoadingSpinner } from '../components/index.js';
-import { useAuth } from '../context/index.js';
+import { useAuth, useApp } from '../context/index.js';
 
 type LoginMode = 'signin' | 'signup';
 type FocusField = 'email' | 'password' | 'submit';
@@ -12,6 +12,7 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onSuccess }: LoginScreenProps) {
   const { signIn, signUp, isLoading, checkConfiguration } = useAuth();
+  const { isCommandPaletteOpen } = useApp();
   const [mode, setMode] = useState<LoginMode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -80,7 +81,7 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
       setError(null);
       setMessage(null);
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (!isConfigured) {
     return (

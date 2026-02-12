@@ -21,9 +21,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     setSelectedIndex(0); // Reset selection when results change
   }, [query]);
 
-  // Handle input
+  // Handle input - this should be the ONLY active handler when palette is open
   useInput(
     (input, key) => {
+      // Always consume input when palette is open to prevent it reaching other screens
       if (!isOpen) return;
 
       if (key.escape) {
@@ -54,7 +55,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         return;
       }
 
-      // Add character to query
+      // Add character to query (but not Ctrl+K which is handled globally)
       if (input && !key.ctrl && !key.meta) {
         setQuery((prev) => prev + input);
       }
@@ -101,42 +102,43 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       width="100%"
       height="100%"
       justifyContent="center"
-      alignItems="flex-start"
-      paddingTop={3}
+      alignItems="center"
     >
       {/* Command Palette Dialog */}
       <Box
         flexDirection="column"
-        width="80%"
+        width={80}
         borderStyle="double"
         borderColor="cyan"
         backgroundColor="black"
         padding={1}
       >
         {/* Header */}
-        <Box marginBottom={1}>
+        <Box justifyContent="center" marginBottom={1}>
           <Text bold color="cyan">
             ⚡ Command Palette
           </Text>
-          <Text dimColor> (Ctrl+K to open/close)</Text>
+          <Text dimColor>  (Ctrl+K to open/close)</Text>
         </Box>
 
         {/* Search Input */}
-        <Box
-          borderStyle="single"
-          borderColor="yellow"
-          paddingX={1}
-          marginBottom={1}
-        >
-          <Text color="yellow">🔍 </Text>
-          <Text>{query}</Text>
-          <Text color="yellow">█</Text>
+        <Box justifyContent="center" marginBottom={1}>
+          <Box
+            borderStyle="single"
+            borderColor="yellow"
+            paddingX={1}
+            width={60}
+          >
+            <Text color="yellow">🔍 </Text>
+            <Text>{query}</Text>
+            <Text color="yellow">█</Text>
+          </Box>
         </Box>
 
         {/* Results */}
-        <Box flexDirection="column" flexGrow={1}>
+        <Box flexDirection="column">
           {filteredCommands.length === 0 ? (
-            <Box paddingX={1}>
+            <Box>
               <Text dimColor>No commands found. Try a different search.</Text>
             </Box>
           ) : (
@@ -145,7 +147,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               return (
                 <Box
                   key={command.id}
-                  paddingX={1}
                   backgroundColor={isSelected ? 'cyan' : undefined}
                 >
                   <Box width={3}>
@@ -188,7 +189,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
         {/* Footer */}
         {filteredCommands.length > 10 && (
-          <Box marginTop={1} paddingX={1}>
+          <Box marginTop={1}>
             <Text dimColor>
               Showing 10 of {filteredCommands.length} results
             </Text>
@@ -196,7 +197,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         )}
 
         {/* Hints */}
-        <Box marginTop={1} paddingX={1} borderTop borderStyle="single" paddingTop={1}>
+        <Box marginTop={1} borderTop borderStyle="single" paddingTop={1}>
           <Text dimColor>
             ↑↓ Navigate • Enter Select • Esc Close
           </Text>

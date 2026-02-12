@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Box, useInput } from 'ink';
 import { AuthProvider, AppProvider, useAuth, useApp } from './context/index.js';
 import { LoadingSpinner, CommandPalette } from './components/index.js';
@@ -18,15 +18,18 @@ import {
 
 function AppContent() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { currentScreen, navigate } = useApp();
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const { currentScreen, navigate, isCommandPaletteOpen, setIsCommandPaletteOpen } = useApp();
 
   // Global keyboard shortcut for command palette (Ctrl+K)
-  useInput((input, key) => {
-    if (key.ctrl && input === 'k') {
-      setIsCommandPaletteOpen((prev) => !prev);
-    }
-  });
+  // This runs with high priority to prevent conflicts with other 'k' shortcuts
+  useInput(
+    (input, key) => {
+      if (key.ctrl && input === 'k') {
+        setIsCommandPaletteOpen(!isCommandPaletteOpen);
+      }
+    },
+    { isActive: true }
+  );
 
   // Redirect based on auth state
   useEffect(() => {
@@ -79,7 +82,10 @@ function AppContent() {
 
   return (
     <Box flexDirection="column" height="100%" position="relative">
-      {currentScreenElement}
+      {/* Render screen */}
+      <Box flexGrow={1}>
+        {currentScreenElement}
+      </Box>
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}

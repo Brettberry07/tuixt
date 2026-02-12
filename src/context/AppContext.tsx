@@ -9,6 +9,8 @@ interface AppContextType extends AppState {
   selectTodo: (todoId: string | null) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
+  isCommandPaletteOpen: boolean;
+  setIsCommandPaletteOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -20,6 +22,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [error, setErrorState] = useState<string | null>(null);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const navigate = useCallback((screen: Screen) => {
     setCurrentScreen(screen);
@@ -65,6 +68,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectTodo,
     setError,
     clearError,
+    isCommandPaletteOpen,
+    setIsCommandPaletteOpen,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

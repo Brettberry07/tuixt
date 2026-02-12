@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
+import { useApp } from '../context/index.js';
 
 interface SidebarItem {
   key: string;
@@ -22,9 +23,14 @@ export function Sidebar({
   onActivate,
   focused = true,
 }: SidebarProps) {
+  const { isCommandPaletteOpen } = useApp();
+
   useInput(
     (input, key) => {
       if (!focused) return;
+
+      // Ignore if Ctrl, Alt, or Meta keys are pressed (reserved for global shortcuts)
+      if (key.ctrl || key.meta || key.alt) return;
 
       if (key.upArrow) {
         const newIndex = selectedIndex > 0 ? selectedIndex - 1 : items.length - 1;
@@ -38,14 +44,14 @@ export function Sidebar({
           onActivate(item.key);
         }
       } else {
-        // Check for shortcut keys
+        // Check for shortcut keys (only handle plain key presses)
         const item = items.find((i) => i.shortcut?.toLowerCase() === input.toLowerCase());
         if (item) {
           onActivate(item.key);
         }
       }
     },
-    { isActive: focused }
+    { isActive: focused && !isCommandPaletteOpen }
   );
 
   return (

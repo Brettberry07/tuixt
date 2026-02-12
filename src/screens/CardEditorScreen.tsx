@@ -11,7 +11,7 @@ type Mode = 'edit' | 'preview';
 type FocusField = 'title' | 'description';
 
 export function CardEditorScreen() {
-  const { selectedCardId, navigate, selectCard, setError, error } = useApp();
+  const { selectedCardId, navigate, selectCard, setError, error, isCommandPaletteOpen } = useApp();
   const [card, setCard] = useState<Card | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -221,7 +221,7 @@ export function CardEditorScreen() {
         setHasUnsavedChanges(true);
       }
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (isLoading) {
     return (

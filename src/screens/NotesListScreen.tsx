@@ -7,7 +7,7 @@ import { formatDate, truncateText } from '../utils/markdown.js';
 import type { Note } from '../types/index.js';
 
 export function NotesListScreen() {
-  const { navigate, selectNote, setError, error } = useApp();
+  const { navigate, selectNote, setError, error, isCommandPaletteOpen } = useApp();
   const [notes, setNotes] = useState<Note[]>([]);
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,7 +113,7 @@ export function NotesListScreen() {
     } else if (input === 'r') {
       loadNotes();
     }
-  });
+  }, { isActive: !isCommandPaletteOpen });
 
   if (isLoading) {
     return (
