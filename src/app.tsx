@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { Box } from 'ink';
+import React, { useEffect, useState } from 'react';
+import { Box, useInput } from 'ink';
 import { AuthProvider, AppProvider, useAuth, useApp } from './context/index.js';
-import { LoadingSpinner } from './components/index.js';
+import { LoadingSpinner, CommandPalette } from './components/index.js';
 import {
   LoginScreen,
   DashboardScreen,
@@ -19,6 +19,14 @@ import {
 function AppContent() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { currentScreen, navigate } = useApp();
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Global keyboard shortcut for command palette (Ctrl+K)
+  useInput((input, key) => {
+    if (key.ctrl && input === 'k') {
+      setIsCommandPaletteOpen((prev) => !prev);
+    }
+  });
 
   // Redirect based on auth state
   useEffect(() => {
@@ -40,32 +48,44 @@ function AppContent() {
   }
 
   // Render the appropriate screen
-  switch (currentScreen) {
-    case 'login':
-      return <LoginScreen onSuccess={() => navigate('dashboard')} />;
-    case 'dashboard':
-      return <DashboardScreen />;
-    case 'notes':
-      return <NotesListScreen />;
-    case 'note-editor':
-      return <NoteEditorScreen />;
-    case 'boards':
-      return <BoardsListScreen />;
-    case 'board-view':
-      return <BoardViewScreen />;
-    case 'card-editor':
-      return <CardEditorScreen />;
-    case 'calendar':
-      return <CalendarScreen />;
-    case 'todos':
-      return <TodosListScreen />;
-    case 'todo-editor':
-      return <TodoEditorScreen />;
-    case 'pomodoro':
-      return <PomodoroScreen />;
-    default:
-      return <DashboardScreen />;
-  }
+  const currentScreenElement = (() => {
+    switch (currentScreen) {
+      case 'login':
+        return <LoginScreen onSuccess={() => navigate('dashboard')} />;
+      case 'dashboard':
+        return <DashboardScreen />;
+      case 'notes':
+        return <NotesListScreen />;
+      case 'note-editor':
+        return <NoteEditorScreen />;
+      case 'boards':
+        return <BoardsListScreen />;
+      case 'board-view':
+        return <BoardViewScreen />;
+      case 'card-editor':
+        return <CardEditorScreen />;
+      case 'calendar':
+        return <CalendarScreen />;
+      case 'todos':
+        return <TodosListScreen />;
+      case 'todo-editor':
+        return <TodoEditorScreen />;
+      case 'pomodoro':
+        return <PomodoroScreen />;
+      default:
+        return <DashboardScreen />;
+    }
+  })();
+
+  return (
+    <Box flexDirection="column" height="100%" position="relative">
+      {currentScreenElement}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+      />
+    </Box>
+  );
 }
 
 export function App() {

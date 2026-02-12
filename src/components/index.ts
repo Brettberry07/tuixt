@@ -5,3 +5,4 @@ export { LoadingSpinner } from './LoadingSpinner.js';
 export { InputField } from './InputField.js';
 export { MarkdownPreview } from './MarkdownPreview.js';
 export { ConfirmModal } from './ConfirmModal.js';
+export { CommandPalette } from './CommandPalette.js';
