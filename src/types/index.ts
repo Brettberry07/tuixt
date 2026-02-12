@@ -41,6 +41,31 @@ export interface Card {
   updated_at: string;
 }
 
+export type TodoStatus = 'todo' | 'in-progress' | 'done' | 'cancelled';
+
+export interface Todo {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  status: TodoStatus;
+  due_date?: string | null;  // ISO date string (YYYY-MM-DD)
+  completed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteTodo {
+  id: string;
+  note_id: string;
+  todo_id: string;
+  created_at: string;
+}
+
+export interface TodoWithNotes extends Todo {
+  notes: Note[];
+}
+
 // Input types for creating/updating entities
 export interface CreateNoteInput {
   title: string;
@@ -83,6 +108,20 @@ export interface UpdateCardInput {
   column_id?: string;
 }
 
+export interface CreateTodoInput {
+  title: string;
+  description?: string;
+  status?: TodoStatus;
+  due_date?: string | null;  // ISO date string (YYYY-MM-DD)
+}
+
+export interface UpdateTodoInput {
+  title?: string;
+  description?: string;
+  status?: TodoStatus;
+  due_date?: string | null;  // ISO date string (YYYY-MM-DD)
+}
+
 // Application state types
 export type Screen =
   | 'login'
@@ -92,13 +131,16 @@ export type Screen =
   | 'boards'
   | 'board-view'
   | 'card-editor'
-  | 'calendar';
+  | 'calendar'
+  | 'todos'
+  | 'todo-editor';
 
 export interface AppState {
   currentScreen: Screen;
   selectedNoteId: string | null;
   selectedBoardId: string | null;
   selectedCardId: string | null;
+  selectedTodoId: string | null;
   error: string | null;
 }
 

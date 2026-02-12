@@ -11,6 +11,8 @@ import {
   BoardViewScreen,
   CardEditorScreen,
   CalendarScreen,
+  TodosListScreen,
+  TodoEditorScreen,
 } from './screens/index.js';
 
 function AppContent() {
@@ -54,6 +56,10 @@ function AppContent() {
       return <CardEditorScreen />;
     case 'calendar':
       return <CalendarScreen />;
+    case 'todos':
+      return <TodosListScreen />;
+    case 'todo-editor':
+      return <TodoEditorScreen />;
     default:
       return <DashboardScreen />;
   }

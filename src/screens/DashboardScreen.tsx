@@ -12,9 +12,11 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   { key: 'notes', label: 'Notes', shortcut: 'n' },
+  { key: 'todos', label: 'Todos', shortcut: 't' },
   { key: 'boards', label: 'Boards', shortcut: 'b' },
   { key: 'calendar', label: 'Calendar', shortcut: 'l' },
   { key: 'create-note', label: 'Create Note', shortcut: 'c' },
+  { key: 'create-todo', label: 'Create Todo', shortcut: 'o' },
   { key: 'create-board', label: 'Create Board', shortcut: 'k' },
   { key: 'logout', label: 'Logout', shortcut: 'q' },
 ];
@@ -30,6 +32,9 @@ export function DashboardScreen() {
         case 'notes':
           navigate('notes');
           break;
+        case 'todos':
+          navigate('todos');
+          break;
         case 'boards':
           navigate('boards');
           break;
@@ -38,6 +43,9 @@ export function DashboardScreen() {
           break;
         case 'create-note':
           navigate('note-editor');
+          break;
+        case 'create-todo':
+          navigate('todo-editor');
           break;
         case 'create-board':
           navigate('boards');
@@ -98,6 +106,9 @@ export function DashboardScreen() {
                 <Text color="cyan">[n]</Text> View Notes
               </Text>
               <Text>
+                <Text color="cyan">[t]</Text> View Todos
+              </Text>
+              <Text>
                 <Text color="cyan">[b]</Text> View Boards
               </Text>
               <Text>
@@ -105,6 +116,9 @@ export function DashboardScreen() {
               </Text>
               <Text>
                 <Text color="cyan">[c]</Text> Create Note
+              </Text>
+              <Text>
+                <Text color="cyan">[o]</Text> Create Todo
               </Text>
               <Text>
                 <Text color="cyan">[k]</Text> Create Board

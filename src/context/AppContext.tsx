@@ -6,6 +6,7 @@ interface AppContextType extends AppState {
   selectNote: (noteId: string | null) => void;
   selectBoard: (boardId: string | null) => void;
   selectCard: (cardId: string | null) => void;
+  selectTodo: (todoId: string | null) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
 }
@@ -17,6 +18,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [error, setErrorState] = useState<string | null>(null);
 
   const navigate = useCallback((screen: Screen) => {
@@ -37,6 +39,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSelectedCardId(cardId);
   }, []);
 
+  const selectTodo = useCallback((todoId: string | null) => {
+    setSelectedTodoId(todoId);
+  }, []);
+
   const setError = useCallback((error: string | null) => {
     setErrorState(error);
   }, []);
@@ -50,11 +56,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectedNoteId,
     selectedBoardId,
     selectedCardId,
+    selectedTodoId,
     error,
     navigate,
     selectNote,
     selectBoard,
     selectCard,
+    selectTodo,
     setError,
     clearError,
   };
