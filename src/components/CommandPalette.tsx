@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { searchCommands, type Command } from '../utils/commands.js';
+import { globalSearch, type SearchResult } from '../utils/search.js';
 import { useApp } from '../context/index.js';
 import { createNote } from '../services/notes.js';
 import { createTodo } from '../services/todos.js';
@@ -16,6 +17,9 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [filteredCommands, setFilteredCommands] = useState<Command[]>([]);
   const [quickActionPreview, setQuickActionPreview] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
 
   // Parse quick action from query
   const parseQuickAction = (input: string): { type: 'note' | 'todo' | 'pomodoro' | null; title: string; content?: string } => {
@@ -50,6 +54,30 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   // Update filtered commands and quick action preview when query changes
   useEffect(() => {
+    // Check if in global search mode (query starts with '>')
+    if (query.startsWith('>')) {
+      setSearchMode(true);
+      const searchQuery = query.slice(1).trim();
+      
+      if (searchQuery.length > 0) {
+        setIsSearching(true);
+        globalSearch(searchQuery).then((results) => {
+          setSearchResults(results);
+          setIsSearching(false);
+        });
+      } else {
+        setSearchResults([]);
+      }
+      
+      setQuickActionPreview(null);
+      setFilteredCommands([]);
+      setSelectedIndex(0);
+      return;
+    }
+    
+    setSearchMode(false);
+    setSearchResults([]);
+    
     const quickAction = parseQuickAction(query);
     
     if (quickAction.type === 'note') {
@@ -82,16 +110,27 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       }
 
       if (key.upArrow) {
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : filteredCommands.length - 1));
+        const maxIndex = searchMode ? searchResults.length - 1 : filteredCommands.length - 1;
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : maxIndex));
         return;
       }
 
       if (key.downArrow) {
-        setSelectedIndex((prev) => (prev < filteredCommands.length - 1 ? prev + 1 : 0));
+        const maxIndex = searchMode ? searchResults.length - 1 : filteredCommands.length - 1;
+        setSelectedIndex((prev) => (prev < maxIndex ? prev + 1 : 0));
         return;
       }
 
       if (key.return) {
+        // Check for search mode
+        if (searchMode && searchResults.length > 0) {
+          const result = searchResults[selectedIndex];
+          if (result) {
+            executeSearchResult(result);
+          }
+          return;
+        }
+        
         // Check for quick actions first
         const quickAction = parseQuickAction(query);
         if (quickAction.type) {
@@ -189,6 +228,38 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     }
   };
 
+  const executeSearchResult = (result: SearchResult) => {
+    // Reset state
+    setQuery('');
+    setSelectedIndex(0);
+    setSearchMode(false);
+    setSearchResults([]);
+    onClose();
+
+    // Navigate based on result type
+    switch (result.type) {
+      case 'note':
+        selectNote(result.id);
+        navigate('note-editor');
+        break;
+      case 'todo':
+        selectTodo(result.id);
+        navigate('todo-editor');
+        break;
+      case 'board':
+        selectBoard(result.id);
+        navigate('board-view');
+        break;
+      case 'card':
+        if (result.parentId) {
+          selectBoard(result.parentId);
+          selectCard(result.id);
+          navigate('card-editor');
+        }
+        break;
+    }
+  };
+
   if (!isOpen) {
     return null;
   }
@@ -234,7 +305,87 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
         {/* Results */}
         <Box flexDirection="column">
-          {quickActionPreview ? (
+          {searchMode ? (
+            // Global search mode
+            isSearching ? (
+              <Box paddingX={1}>
+                <Text color="yellow">Searching...</Text>
+              </Box>
+            ) : searchResults.length === 0 ? (
+              <Box flexDirection="column" paddingX={1}>
+                <Text dimColor>
+                  {query.length > 1 ? 'No results found.' : 'Type to search across all notes, todos, boards, and cards'}
+                </Text>
+              </Box>
+            ) : (
+              searchResults.slice(0, 10).map((result, index) => {
+                const isSelected = index === selectedIndex;
+                const typeColors: Record<string, string> = {
+                  note: 'blue',
+                  todo: 'green',
+                  board: 'magenta',
+                  card: 'yellow',
+                };
+                const typeIcons: Record<string, string> = {
+                  note: '📝',
+                  todo: '✓',
+                  board: '📋',
+                  card: '🗂',
+                };
+                
+                return (
+                  <Box
+                    key={`${result.type}-${result.id}`}
+                    backgroundColor={isSelected ? 'cyan' : undefined}
+                    paddingX={1}
+                    marginBottom={0}
+                  >
+                    <Box width={3}>
+                      <Text color={isSelected ? 'black' : 'cyan'}>
+                        {isSelected ? '▶' : ' '}
+                      </Text>
+                    </Box>
+                    <Box width={3}>
+                      <Text>{typeIcons[result.type]}</Text>
+                    </Box>
+                    <Box flexDirection="column" flexGrow={1}>
+                      <Text
+                        bold={isSelected}
+                        color={isSelected ? 'black' : undefined}
+                      >
+                        {result.title}
+                      </Text>
+                      {result.description && (
+                        <Text
+                          dimColor={!isSelected}
+                          color={isSelected ? 'black' : undefined}
+                        >
+                          {result.description}
+                        </Text>
+                      )}
+                      {result.metadata && (
+                        <Text
+                          dimColor={!isSelected}
+                          color={isSelected ? 'black' : undefined}
+                          italic
+                        >
+                          {result.metadata}
+                        </Text>
+                      )}
+                    </Box>
+                    <Box marginLeft={1}>
+                      <Text
+                        color={isSelected ? 'black' : typeColors[result.type]}
+                        bold={!isSelected}
+                      >
+                        {result.type.toUpperCase()}
+                      </Text>
+                    </Box>
+                  </Box>
+                );
+              })
+            )
+          ) : quickActionPreview ? (
             <Box flexDirection="column">
               <Box backgroundColor="green" paddingX={1}>
                 <Text bold color="black">Quick Action Ready</Text>
@@ -256,6 +407,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                 <Text color="cyan">todo Task name</Text>
                 <Text dimColor> or </Text>
                 <Text color="cyan">start pomodoro</Text>
+              </Box>
+              <Box marginTop={1}>
+                <Text dimColor>Global search: </Text>
+                <Text color="magenta">&gt;search query</Text>
               </Box>
             </Box>
           ) : (
@@ -305,7 +460,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         </Box>
 
         {/* Footer */}
-        {!quickActionPreview && filteredCommands.length > 10 && (
+        {searchMode && searchResults.length > 10 && (
+          <Box marginTop={1}>
+            <Text dimColor>
+              Showing 10 of {searchResults.length} results
+            </Text>
+          </Box>
+        )}
+        {!quickActionPreview && !searchMode && filteredCommands.length > 10 && (
           <Box marginTop={1}>
             <Text dimColor>
               Showing 10 of {filteredCommands.length} results
@@ -318,9 +480,13 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           <Text dimColor>
             ↑↓ Navigate • Enter Select • Esc Close
           </Text>
-          {!quickActionPreview && (
+          {searchMode ? (
             <Text dimColor>
-              Quick: <Text color="cyan">note Title|Content</Text> • <Text color="cyan">todo Task</Text> • <Text color="cyan">pomo</Text>
+              Global search mode: <Text color="magenta">&gt;query</Text> to search everywhere
+            </Text>
+          ) : !quickActionPreview && (
+            <Text dimColor>
+              Quick: <Text color="cyan">note Title|Content</Text> • <Text color="cyan">todo Task</Text> • <Text color="cyan">pomo</Text> • <Text color="magenta">&gt;search</Text>
             </Text>
           )}
         </Box>

@@ -4,7 +4,7 @@ real knowledge layer (obsidian stlye linking and backlog)
 reccuring todos (daily, weekly, monthly)
 global search mode (search through all documents including kanban, todos, calendar, notes, etc.)
 global linking (notion stlye, everything should reference everything, tagging etc)
-add quick actions (from command pallete do new note "title" "desc", new todo "title", etc.)
+
 
 backlog:
 Make cli for it

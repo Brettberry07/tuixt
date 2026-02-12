@@ -84,6 +84,16 @@ export const commands: Command[] = [
     action: { type: 'navigate', screen: 'todo-editor' },
   },
 
+  // Search
+  {
+    id: 'global-search',
+    label: 'Global Search',
+    description: 'Search across all notes, todos, boards, and cards (type >query)',
+    category: 'Search',
+    keywords: ['search', 'find', 'lookup', '>', 'global'],
+    action: { type: 'function', callback: () => {} }, // Placeholder, actual search is triggered by '>' prefix
+  },
+
   // Quick Actions
   {
     id: 'quick-notes',
