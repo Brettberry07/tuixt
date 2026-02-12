@@ -83,6 +83,14 @@ export const commands: Command[] = [
     keywords: ['new todo', 'add todo', 'new task', 'add task'],
     action: { type: 'navigate', screen: 'todo-editor' },
   },
+  {
+    id: 'create-reminder',
+    label: 'Create Calendar Reminder',
+    description: 'Quick reminder with date (type: reminder Title YYYY-MM-DD)',
+    category: 'Create',
+    keywords: ['reminder', 'calendar', 'event', 'date', 'schedule'],
+    action: { type: 'function', callback: () => {} }, // Placeholder, actual action handled by quick action parser
+  },
 
   // Search
   {

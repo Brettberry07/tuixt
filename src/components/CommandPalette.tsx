@@ -22,8 +22,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const [searchMode, setSearchMode] = useState(false);
 
   // Parse quick action from query
-  const parseQuickAction = (input: string): { type: 'note' | 'todo' | 'pomodoro' | null; title: string; content?: string } => {
+  const parseQuickAction = (input: string): { type: 'note' | 'todo' | 'pomodoro' | 'reminder' | null; title: string; content?: string; date?: string } => {
     const trimmed = input.trim();
+    
+    // Pattern: "reminder <title> <date>" - date can be YYYY-MM-DD or relative like "tomorrow"
+    const reminderMatch = trimmed.match(/^(?:new\s+)?reminder\s+(.+)\s+(\d{4}-\d{2}-\d{2})$/i);
+    if (reminderMatch) {
+      return { type: 'reminder', title: reminderMatch[1].trim(), date: reminderMatch[2].trim() };
+    }
     
     // Pattern: "start pomodoro" or "pomodoro" or "pomo"
     const pomodoroMatch = trimmed.match(/^(?:start\s+)?(?:pomodoro|pomo)(?:\s+start)?$/i);
@@ -88,6 +94,9 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       setFilteredCommands([]);
     } else if (quickAction.type === 'pomodoro') {
       setQuickActionPreview(`⚡ Quick start Pomodoro timer`);
+      setFilteredCommands([]);
+    } else if (quickAction.type === 'reminder') {
+      setQuickActionPreview(`⚡ Quick create reminder: "${quickAction.title}" on ${quickAction.date}`);
       setFilteredCommands([]);
     } else {
       setQuickActionPreview(null);
@@ -159,7 +168,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     { isActive: isOpen }
   );
 
-  const executeQuickAction = async (action: { type: 'note' | 'todo' | 'pomodoro' | null; title: string; content?: string }) => {
+  const executeQuickAction = async (action: { type: 'note' | 'todo' | 'pomodoro' | 'reminder' | null; title: string; content?: string; date?: string }) => {
     // Reset state
     setQuery('');
     setSelectedIndex(0);
@@ -195,6 +204,20 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     } else if (action.type === 'pomodoro') {
       // Navigate to pomodoro timer
       navigate('pomodoro');
+    } else if (action.type === 'reminder') {
+      // Create a note with the specified date (calendar event/reminder)
+      const result = await createNote({
+        title: action.title,
+        content: '',
+        date: action.date,
+      });
+      
+      if (result.error) {
+        setError(result.error);
+      } else if (result.data) {
+        // Navigate to calendar to see the reminder
+        navigate('calendar');
+      }
     }
   };
 
@@ -405,6 +428,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                 <Text color="cyan">note Title | Content</Text>
                 <Text dimColor> or </Text>
                 <Text color="cyan">todo Task name</Text>
+              </Box>
+              <Box marginTop={1}>
+                <Text dimColor>Quick: </Text>
+                <Text color="cyan">reminder Title YYYY-MM-DD</Text>
                 <Text dimColor> or </Text>
                 <Text color="cyan">start pomodoro</Text>
               </Box>
@@ -485,9 +512,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               Global search mode: <Text color="magenta">&gt;query</Text> to search everywhere
             </Text>
           ) : !quickActionPreview && (
-            <Text dimColor>
-              Quick: <Text color="cyan">note Title|Content</Text> • <Text color="cyan">todo Task</Text> • <Text color="cyan">pomo</Text> • <Text color="magenta">&gt;search</Text>
-            </Text>
+            <Box flexDirection="column">
+              <Text dimColor>
+                Quick: <Text color="cyan">note Title|Content</Text> • <Text color="cyan">todo Task</Text> • <Text color="cyan">pomo</Text>
+              </Text>
+              <Text dimColor>
+                <Text color="cyan">reminder Title YYYY-MM-DD</Text> • <Text color="magenta">&gt;search</Text>
+              </Text>
+            </Box>
           )}
         </Box>
       </Box>
