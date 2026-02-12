@@ -133,7 +133,8 @@ export type Screen =
   | 'card-editor'
   | 'calendar'
   | 'todos'
-  | 'todo-editor';
+  | 'todo-editor'
+  | 'pomodoro';
 
 export interface AppState {
   currentScreen: Screen;

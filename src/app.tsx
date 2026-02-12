@@ -13,6 +13,7 @@ import {
   CalendarScreen,
   TodosListScreen,
   TodoEditorScreen,
+  PomodoroScreen,
 } from './screens/index.js';
 
 function AppContent() {
@@ -60,6 +61,8 @@ function AppContent() {
       return <TodosListScreen />;
     case 'todo-editor':
       return <TodoEditorScreen />;
+    case 'pomodoro':
+      return <PomodoroScreen />;
     default:
       return <DashboardScreen />;
   }

@@ -15,6 +15,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'todos', label: 'Todos', shortcut: 't' },
   { key: 'boards', label: 'Boards', shortcut: 'b' },
   { key: 'calendar', label: 'Calendar', shortcut: 'l' },
+  { key: 'pomodoro', label: 'Pomodoro Timer', shortcut: 'p' },
   { key: 'create-note', label: 'Create Note', shortcut: 'c' },
   { key: 'create-todo', label: 'Create Todo', shortcut: 'o' },
   { key: 'create-board', label: 'Create Board', shortcut: 'k' },
@@ -40,6 +41,9 @@ export function DashboardScreen() {
           break;
         case 'calendar':
           navigate('calendar');
+          break;
+        case 'pomodoro':
+          navigate('pomodoro');
           break;
         case 'create-note':
           navigate('note-editor');
@@ -113,6 +117,9 @@ export function DashboardScreen() {
               </Text>
               <Text>
                 <Text color="cyan">[l]</Text> View Calendar
+              </Text>
+              <Text>
+                <Text color="cyan">[p]</Text> Pomodoro Timer
               </Text>
               <Text>
                 <Text color="cyan">[c]</Text> Create Note
