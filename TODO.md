@@ -2,12 +2,12 @@
 
 ## Priority
 
-  1. real knowledge layer (obsidian stlye linking and backlog)
-  2. reccuring todos (daily, weekly, monthly)
-  3. global search mode (search through all documents including kanban, todos, calendar, notes, etc.)
-  4. global linking (notion stlye, everything should reference everything, tagging etc)
-  5. settings page
-  6. help page
+  1. Real knowledge layer (obsidian stlye linking and backlog)
+  2. Scheduled todos (daily, weekly, monthly)
+  3. Global search mode (search through all documents including kanban, todos, calendar notes, etc.)
+  4. Global linking (notion stlye, everything should reference everything, tagging etc)
+  5. Settings/Config page
+  6. Help/Manual page
 
 ## backlog
 
@@ -18,3 +18,5 @@
   4. Code editor inside messenger
      1. Syntax Highlighting
   5. Preview LaTeX equations
+  6. Onboarding?
+  7. Bots?
