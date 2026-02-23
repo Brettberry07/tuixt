@@ -12,12 +12,12 @@ A terminal-based, cloud-backed notes and kanban application built with React/Ink
 
 ## Prerequisites
 
-- Node.js 20+ (LTS)
+- Node.js 20+
 - A Supabase account and project
 
 ## Installation
 
-### From npm (when published)
+### (FUTURE) From npm (when published)
 
 ```bash
 npm install -g tuixt
@@ -30,7 +30,6 @@ git clone <repository-url>
 cd tuixt
 npm install
 npm run build
-npm link
 ```
 
 ## Database Setup
@@ -53,14 +52,6 @@ export SUPABASE_ANON_KEY="your-anon-key"
 ```
 
 You can find these values in your Supabase project settings under API.
-
-### Optional: Add to shell profile
-
-```bash
-# Add to ~/.zshrc or ~/.bashrc
-export SUPABASE_URL="https://your-project.supabase.co"
-export SUPABASE_ANON_KEY="your-anon-key"
-```
 
 ## Usage
 
@@ -150,9 +141,6 @@ npm run dev
 
 # Build for production
 npm run build
-
-# Type check
-npm run typecheck
 
 # Run the built application
 npm start
