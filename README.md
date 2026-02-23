@@ -17,7 +17,7 @@ A terminal-based, cloud-backed notes and kanban application built with React/Ink
 
 ## Installation
 
-### From npm (when published)
+### (FUTURE) From npm (when published)
 
 ```bash
 npm install -g tuixt
@@ -30,7 +30,6 @@ git clone <repository-url>
 cd tuixt
 npm install
 npm run build
-npm link
 ```
 
 ## Database Setup
@@ -150,9 +149,6 @@ npm run dev
 
 # Build for production
 npm run build
-
-# Type check
-npm run typecheck
 
 # Run the built application
 npm start
