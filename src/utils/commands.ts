@@ -26,6 +26,14 @@ export const commands: Command[] = [
     action: { type: 'navigate', screen: 'dashboard' },
   },
   {
+    id: 'nav-workspaces',
+    label: 'View Workspaces',
+    description: 'Browse all your workspaces',
+    category: 'Navigation',
+    keywords: ['workspace', 'context', 'project', 'list workspaces'],
+    action: { type: 'navigate', screen: 'workspaces' },
+  },
+  {
     id: 'nav-notes',
     label: 'View Notes',
     description: 'Browse all your notes',
@@ -68,6 +76,14 @@ export const commands: Command[] = [
 
   // Create Commands
   {
+    id: 'create-workspace',
+    label: 'Create New Workspace',
+    description: 'Create a new workspace to organize your content',
+    category: 'Create',
+    keywords: ['new workspace', 'add workspace', 'new project', 'new context'],
+    action: { type: 'navigate', screen: 'workspace-editor' },
+  },
+  {
     id: 'create-note',
     label: 'Create New Note',
     description: 'Start writing a new note',
@@ -103,6 +119,14 @@ export const commands: Command[] = [
   },
 
   // Quick Actions
+  {
+    id: 'quick-workspaces',
+    label: 'Quick Access: Workspaces',
+    description: 'Jump to workspaces list',
+    category: 'Quick Access',
+    keywords: ['w', 'workspaces', 'projects', 'quick'],
+    action: { type: 'navigate', screen: 'workspaces' },
+  },
   {
     id: 'quick-notes',
     label: 'Quick Access: Notes',

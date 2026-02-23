@@ -1,8 +1,10 @@
 import { getSupabaseClient } from './supabase.js';
 import type {
   Board,
+  BoardWithWorkspace,
   Column,
   Card,
+  Workspace,
   CreateBoardInput,
   CreateColumnInput,
   UpdateColumnInput,
@@ -13,20 +15,60 @@ import type {
   ColumnWithCards,
 } from '../types/index.js';
 
-// Board operations
-export async function fetchBoards(): Promise<ServiceResult<Board[]>> {
+// Fetch boards, optionally filtered by workspace
+// workspaceId: undefined = all boards, null = global boards only, string = specific workspace
+export async function fetchBoards(workspaceId?: string | null): Promise<ServiceResult<Board[]>> {
   const supabase = getSupabaseClient();
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('boards')
     .select('*')
     .order('created_at', { ascending: false });
+  
+  if (workspaceId === null) {
+    query = query.is('workspace_id', null);
+  } else if (workspaceId !== undefined) {
+    query = query.eq('workspace_id', workspaceId);
+  }
+  
+  const { data, error } = await query;
   
   if (error) {
     return { data: null, error: error.message };
   }
   
   return { data: data as Board[], error: null };
+}
+
+// Fetch boards with workspace info (for global view)
+export async function fetchBoardsWithWorkspace(): Promise<ServiceResult<BoardWithWorkspace[]>> {
+  const supabase = getSupabaseClient();
+  
+  const { data: boards, error: boardsError } = await supabase
+    .from('boards')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (boardsError) {
+    return { data: null, error: boardsError.message };
+  }
+  
+  const { data: workspaces, error: workspacesError } = await supabase
+    .from('workspaces')
+    .select('*');
+  
+  if (workspacesError) {
+    return { data: null, error: workspacesError.message };
+  }
+  
+  const workspaceMap = new Map((workspaces as Workspace[]).map(w => [w.id, w]));
+  
+  const boardsWithWorkspace: BoardWithWorkspace[] = (boards as Board[]).map(board => ({
+    ...board,
+    workspace: board.workspace_id ? workspaceMap.get(board.workspace_id) || null : null,
+  }));
+  
+  return { data: boardsWithWorkspace, error: null };
 }
 
 export async function fetchBoard(id: string): Promise<ServiceResult<Board>> {
@@ -112,12 +154,18 @@ export async function createBoard(input: CreateBoardInput): Promise<ServiceResul
     return { data: null, error: 'Not authenticated' };
   }
   
+  const insertData: Record<string, unknown> = {
+    user_id: userData.user.id,
+    title: input.title,
+  };
+  
+  if (input.workspace_id !== undefined) {
+    insertData.workspace_id = input.workspace_id;
+  }
+  
   const { data, error } = await supabase
     .from('boards')
-    .insert({
-      user_id: userData.user.id,
-      title: input.title,
-    })
+    .insert(insertData)
     .select()
     .single();
   

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useInput, useStdout } from 'ink';
 import { Header, StatusBar, LoadingSpinner } from '../components/index.js';
-import { useApp } from '../context/index.js';
+import { useApp, useWorkspace } from '../context/index.js';
 import { fetchNote, createNote, updateNote } from '../services/notes.js';
 import { renderMarkdown } from '../utils/markdown.js';
 import type { Note } from '../types/index.js';
@@ -10,7 +10,8 @@ type Mode = 'edit' | 'preview';
 type FocusField = 'title' | 'content';
 
 export function NoteEditorScreen() {
-  const { selectedNoteId, navigate, selectNote, setError, error, isCommandPaletteOpen } = useApp();
+  const { selectedNoteId, currentWorkspaceId, navigate, selectNote, setError, error, isCommandPaletteOpen } = useApp();
+  const { currentWorkspace, loadWorkspace } = useWorkspace();
   const { stdout } = useStdout();
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
@@ -21,6 +22,7 @@ export function NoteEditorScreen() {
   const [focusedField, setFocusedField] = useState<FocusField>('title');
   const [message, setMessage] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [workspace, setWorkspace] = useState<{ name: string; icon: string } | null>(null);
   
   // Cursor position for content editing
   const [cursorLine, setCursorLine] = useState(0);
@@ -37,6 +39,14 @@ export function NoteEditorScreen() {
   // Load existing note
   useEffect(() => {
     async function loadNote() {
+      // Load workspace info
+      if (currentWorkspaceId) {
+        const ws = await loadWorkspace(currentWorkspaceId);
+        if (ws) {
+          setWorkspace({ name: ws.name, icon: ws.icon });
+        }
+      }
+      
       if (!selectedNoteId) return;
 
       setIsLoading(true);
@@ -52,7 +62,7 @@ export function NoteEditorScreen() {
     }
 
     loadNote();
-  }, [selectedNoteId, setError]);
+  }, [selectedNoteId, setError, currentWorkspaceId, loadWorkspace]);
 
   const handleSave = useCallback(async () => {
     if (!title.trim()) {
@@ -65,7 +75,11 @@ export function NoteEditorScreen() {
 
     let result;
     if (isNewNote) {
-      result = await createNote({ title: title.trim(), content });
+      result = await createNote({ 
+        title: title.trim(), 
+        content,
+        workspace_id: currentWorkspaceId,
+      });
     } else {
       result = await updateNote(selectedNoteId, { title: title.trim(), content });
     }

@@ -3,6 +3,8 @@ import type { Screen, AppState } from '../types/index.js';
 
 interface AppContextType extends AppState {
   navigate: (screen: Screen) => void;
+  setCurrentWorkspace: (workspaceId: string | null) => void;
+  selectWorkspace: (workspaceId: string | null) => void;
   selectNote: (noteId: string | null) => void;
   selectBoard: (boardId: string | null) => void;
   selectCard: (cardId: string | null) => void;
@@ -17,6 +19,8 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentScreen, setCurrentScreen] = useState<Screen>('login');
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -28,6 +32,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentScreen(screen);
     // Clear error when navigating
     setErrorState(null);
+  }, []);
+
+  const setCurrentWorkspace = useCallback((workspaceId: string | null) => {
+    setCurrentWorkspaceId(workspaceId);
+  }, []);
+
+  const selectWorkspace = useCallback((workspaceId: string | null) => {
+    setSelectedWorkspaceId(workspaceId);
   }, []);
 
   const selectNote = useCallback((noteId: string | null) => {
@@ -56,12 +68,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value: AppContextType = {
     currentScreen,
+    currentWorkspaceId,
+    selectedWorkspaceId,
     selectedNoteId,
     selectedBoardId,
     selectedCardId,
     selectedTodoId,
     error,
     navigate,
+    setCurrentWorkspace,
+    selectWorkspace,
     selectNote,
     selectBoard,
     selectCard,
@@ -82,3 +98,4 @@ export function useApp(): AppContextType {
   }
   return context;
 }
+

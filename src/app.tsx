@@ -1,10 +1,13 @@
 import React, { useEffect } from 'react';
 import { Box, useInput } from 'ink';
-import { AuthProvider, AppProvider, useAuth, useApp } from './context/index.js';
+import { AuthProvider, AppProvider, WorkspaceProvider, useAuth, useApp } from './context/index.js';
 import { LoadingSpinner, CommandPalette } from './components/index.js';
 import {
   LoginScreen,
   DashboardScreen,
+  WorkspacesListScreen,
+  WorkspaceViewScreen,
+  WorkspaceEditorScreen,
   NotesListScreen,
   NoteEditorScreen,
   BoardsListScreen,
@@ -57,6 +60,12 @@ function AppContent() {
         return <LoginScreen onSuccess={() => navigate('dashboard')} />;
       case 'dashboard':
         return <DashboardScreen />;
+      case 'workspaces':
+        return <WorkspacesListScreen />;
+      case 'workspace-view':
+        return <WorkspaceViewScreen />;
+      case 'workspace-editor':
+        return <WorkspaceEditorScreen />;
       case 'notes':
         return <NotesListScreen />;
       case 'note-editor':
@@ -96,7 +105,9 @@ export function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        <AppContent />
+        <WorkspaceProvider>
+          <AppContent />
+        </WorkspaceProvider>
       </AppProvider>
     </AuthProvider>
   );

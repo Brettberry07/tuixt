@@ -1,5 +1,8 @@
 export { LoginScreen } from './LoginScreen.js';
 export { DashboardScreen } from './DashboardScreen.js';
+export { WorkspacesListScreen } from './WorkspacesListScreen.js';
+export { WorkspaceViewScreen } from './WorkspaceViewScreen.js';
+export { WorkspaceEditorScreen } from './WorkspaceEditorScreen.js';
 export { NotesListScreen } from './NotesListScreen.js';
 export { NoteEditorScreen } from './NoteEditorScreen.js';
 export { BoardsListScreen } from './BoardsListScreen.js';

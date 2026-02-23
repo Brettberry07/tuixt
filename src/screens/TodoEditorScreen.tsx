@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Header, StatusBar, LoadingSpinner } from '../components/index.js';
-import { useApp } from '../context/index.js';
+import { useApp, useWorkspace } from '../context/index.js';
 import {
   fetchTodo,
   createTodo,
@@ -17,7 +17,8 @@ type FocusField = 'title' | 'description' | 'status' | 'due_date' | 'notes';
 const STATUS_OPTIONS: TodoStatus[] = ['todo', 'in-progress', 'done', 'cancelled'];
 
 export function TodoEditorScreen() {
-  const { selectedTodoId, navigate, selectTodo, setError, error, isCommandPaletteOpen } = useApp();
+  const { selectedTodoId, currentWorkspaceId, navigate, selectTodo, setError, error, isCommandPaletteOpen } = useApp();
+  const { loadWorkspace } = useWorkspace();
   const [todo, setTodo] = useState<TodoWithNotes | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -32,15 +33,24 @@ export function TodoEditorScreen() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [selectedNoteIndex, setSelectedNoteIndex] = useState(0);
   const [showNotePicker, setShowNotePicker] = useState(false);
+  const [workspace, setWorkspace] = useState<{ name: string; icon: string } | null>(null);
 
   const isNewTodo = !selectedTodoId;
 
   // Load existing todo and linked notes
   useEffect(() => {
     async function loadTodo() {
+      // Load workspace info
+      if (currentWorkspaceId) {
+        const ws = await loadWorkspace(currentWorkspaceId);
+        if (ws) {
+          setWorkspace({ name: ws.name, icon: ws.icon });
+        }
+      }
+      
       if (!selectedTodoId) {
-        // Load all notes for linking
-        const notesResult = await fetchNotes();
+        // Load all notes for linking (from current workspace or all)
+        const notesResult = await fetchNotes(currentWorkspaceId);
         if (!notesResult.error && notesResult.data) {
           setAvailableNotes(notesResult.data);
         }
@@ -60,8 +70,8 @@ export function TodoEditorScreen() {
         setLinkedNotes(result.data.notes);
       }
 
-      // Load all notes for linking
-      const notesResult = await fetchNotes();
+      // Load all notes for linking (from current workspace or all)
+      const notesResult = await fetchNotes(currentWorkspaceId);
       if (!notesResult.error && notesResult.data) {
         setAvailableNotes(notesResult.data);
       }
@@ -70,7 +80,7 @@ export function TodoEditorScreen() {
     }
 
     loadTodo();
-  }, [selectedTodoId, setError]);
+  }, [selectedTodoId, setError, currentWorkspaceId, loadWorkspace]);
 
   const handleSave = useCallback(async () => {
     if (!title.trim()) {
@@ -86,6 +96,7 @@ export function TodoEditorScreen() {
       description: description.trim(),
       status,
       due_date: dueDate || null,
+      workspace_id: isNewTodo ? currentWorkspaceId : undefined,
     };
 
     let result;
