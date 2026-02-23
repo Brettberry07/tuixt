@@ -2,25 +2,68 @@ import { getSupabaseClient } from './supabase.js';
 import type {
   Todo,
   TodoWithNotes,
+  TodoWithWorkspace,
   Note,
+  Workspace,
   CreateTodoInput,
   UpdateTodoInput,
   ServiceResult,
 } from '../types/index.js';
 
-export async function fetchTodos(): Promise<ServiceResult<Todo[]>> {
+// Fetch todos, optionally filtered by workspace
+// workspaceId: undefined = all todos, null = global todos only, string = specific workspace
+export async function fetchTodos(workspaceId?: string | null): Promise<ServiceResult<Todo[]>> {
   const supabase = getSupabaseClient();
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('todos')
     .select('*')
     .order('updated_at', { ascending: false });
+  
+  if (workspaceId === null) {
+    query = query.is('workspace_id', null);
+  } else if (workspaceId !== undefined) {
+    query = query.eq('workspace_id', workspaceId);
+  }
+  
+  const { data, error } = await query;
   
   if (error) {
     return { data: null, error: error.message };
   }
   
   return { data: data as Todo[], error: null };
+}
+
+// Fetch todos with workspace info (for global view)
+export async function fetchTodosWithWorkspace(): Promise<ServiceResult<TodoWithWorkspace[]>> {
+  const supabase = getSupabaseClient();
+  
+  const { data: todos, error: todosError } = await supabase
+    .from('todos')
+    .select('*')
+    .order('updated_at', { ascending: false });
+  
+  if (todosError) {
+    return { data: null, error: todosError.message };
+  }
+  
+  const { data: workspaces, error: workspacesError } = await supabase
+    .from('workspaces')
+    .select('*');
+  
+  if (workspacesError) {
+    return { data: null, error: workspacesError.message };
+  }
+  
+  const workspaceMap = new Map((workspaces as Workspace[]).map(w => [w.id, w]));
+  
+  const todosWithWorkspace: TodoWithWorkspace[] = (todos as Todo[]).map(todo => ({
+    ...todo,
+    workspace: todo.workspace_id ? workspaceMap.get(todo.workspace_id) || null : null,
+  }));
+  
+  return { data: todosWithWorkspace, error: null };
 }
 
 export async function fetchTodo(id: string): Promise<ServiceResult<TodoWithNotes>> {
@@ -90,6 +133,10 @@ export async function createTodo(input: CreateTodoInput): Promise<ServiceResult<
     insertData.due_date = input.due_date;
   }
   
+  if (input.workspace_id !== undefined) {
+    insertData.workspace_id = input.workspace_id;
+  }
+  
   const { data, error } = await supabase
     .from('todos')
     .insert(insertData)
@@ -131,6 +178,10 @@ export async function updateTodo(
   }
   if (input.due_date !== undefined) {
     updateData.due_date = input.due_date;
+  }
+  
+  if (input.workspace_id !== undefined) {
+    updateData.workspace_id = input.workspace_id;
   }
   
   const { data, error } = await supabase

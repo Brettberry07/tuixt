@@ -1,32 +1,61 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Header, StatusBar, LoadingSpinner, ConfirmModal } from '../components/index.js';
-import { useApp } from '../context/index.js';
-import { fetchNotes, deleteNote } from '../services/notes.js';
+import { useApp, useWorkspace } from '../context/index.js';
+import { fetchNotes, fetchNotesWithWorkspace, deleteNote } from '../services/notes.js';
 import { formatDate, truncateText } from '../utils/markdown.js';
-import type { Note } from '../types/index.js';
+import type { Note, NoteWithWorkspace } from '../types/index.js';
 
 export function NotesListScreen() {
-  const { navigate, selectNote, setError, error, isCommandPaletteOpen } = useApp();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
+  const { navigate, selectNote, setError, error, isCommandPaletteOpen, currentWorkspaceId } = useApp();
+  const { currentWorkspace, loadWorkspace } = useWorkspace();
+  const [notes, setNotes] = useState<NoteWithWorkspace[]>([]);
+  const [filteredNotes, setFilteredNotes] = useState<NoteWithWorkspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<Note | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<NoteWithWorkspace | null>(null);
+  const [workspace, setWorkspace] = useState<{ name: string; icon: string } | null>(null);
+
+  const isGlobalView = currentWorkspaceId === null || currentWorkspaceId === undefined;
 
   const loadNotes = useCallback(async () => {
     setIsLoading(true);
-    const result = await fetchNotes();
-    if (result.error) {
-      setError(result.error);
+    
+    // Load workspace info if we have a current workspace
+    if (currentWorkspaceId) {
+      const ws = await loadWorkspace(currentWorkspaceId);
+      if (ws) {
+        setWorkspace({ name: ws.name, icon: ws.icon });
+      }
     } else {
-      setNotes(result.data || []);
-      setFilteredNotes(result.data || []);
+      setWorkspace(null);
+    }
+    
+    // Fetch notes based on context
+    if (isGlobalView) {
+      // Global view - fetch all notes with workspace info
+      const result = await fetchNotesWithWorkspace();
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setNotes(result.data || []);
+        setFilteredNotes(result.data || []);
+      }
+    } else {
+      // Workspace-specific view
+      const result = await fetchNotes(currentWorkspaceId);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        const notesWithWorkspace = (result.data || []).map(n => ({ ...n, workspace: null }));
+        setNotes(notesWithWorkspace);
+        setFilteredNotes(notesWithWorkspace);
+      }
     }
     setIsLoading(false);
-  }, [setError]);
+  }, [setError, currentWorkspaceId, isGlobalView, loadWorkspace]);
 
   useEffect(() => {
     loadNotes();
@@ -124,9 +153,18 @@ export function NotesListScreen() {
     );
   }
 
+  const title = isGlobalView 
+    ? 'All Notes' 
+    : workspace 
+      ? `${workspace.icon} ${workspace.name} - Notes` 
+      : 'Notes';
+
   return (
     <Box flexDirection="column" height="100%">
-      <Header title="Notes" subtitle={`${filteredNotes.length} notes`} />
+      <Header 
+        title={title} 
+        subtitle={`${filteredNotes.length} note${filteredNotes.length !== 1 ? 's' : ''}${isGlobalView ? ' (all workspaces)' : ''}`} 
+      />
 
       {isSearching && (
         <Box paddingX={2} marginBottom={1}>
@@ -183,6 +221,12 @@ export function NotesListScreen() {
                   </Box>
                   <Box paddingLeft={3}>
                     <Text dimColor>Updated {formatDate(note.updated_at)}</Text>
+                    {isGlobalView && note.workspace && (
+                      <Text color={note.workspace.color as never}> • {note.workspace.icon} {note.workspace.name}</Text>
+                    )}
+                    {isGlobalView && !note.workspace && (
+                      <Text dimColor> • 🌐 Global</Text>
+                    )}
                   </Box>
                 </Box>
               );

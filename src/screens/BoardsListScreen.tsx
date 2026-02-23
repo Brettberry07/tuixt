@@ -2,33 +2,59 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import InkTextInput from 'ink-text-input';
 import { Header, StatusBar, LoadingSpinner, ConfirmModal } from '../components/index.js';
-import { useApp } from '../context/index.js';
-import { fetchBoards, createBoard, deleteBoard } from '../services/boards.js';
+import { useApp, useWorkspace } from '../context/index.js';
+import { fetchBoards, fetchBoardsWithWorkspace, createBoard, deleteBoard } from '../services/boards.js';
 import { formatDate } from '../utils/markdown.js';
-import type { Board } from '../types/index.js';
+import type { Board, BoardWithWorkspace } from '../types/index.js';
 
 type Mode = 'list' | 'create';
 
 export function BoardsListScreen() {
-  const { navigate, selectBoard, setError, error, isCommandPaletteOpen } = useApp();
-  const [boards, setBoards] = useState<Board[]>([]);
+  const { navigate, selectBoard, setError, error, isCommandPaletteOpen, currentWorkspaceId } = useApp();
+  const { loadWorkspace } = useWorkspace();
+  const [boards, setBoards] = useState<BoardWithWorkspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [mode, setMode] = useState<Mode>('list');
   const [newBoardTitle, setNewBoardTitle] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState<Board | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<BoardWithWorkspace | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [workspace, setWorkspace] = useState<{ name: string; icon: string } | null>(null);
+
+  const isGlobalView = currentWorkspaceId === null || currentWorkspaceId === undefined;
 
   const loadBoards = useCallback(async () => {
     setIsLoading(true);
-    const result = await fetchBoards();
-    if (result.error) {
-      setError(result.error);
+    
+    // Load workspace info if we have a current workspace
+    if (currentWorkspaceId) {
+      const ws = await loadWorkspace(currentWorkspaceId);
+      if (ws) {
+        setWorkspace({ name: ws.name, icon: ws.icon });
+      }
     } else {
-      setBoards(result.data || []);
+      setWorkspace(null);
+    }
+    
+    // Fetch boards based on context
+    if (isGlobalView) {
+      const result = await fetchBoardsWithWorkspace();
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setBoards(result.data || []);
+      }
+    } else {
+      const result = await fetchBoards(currentWorkspaceId);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        const boardsWithWorkspace = (result.data || []).map(b => ({ ...b, workspace: null }));
+        setBoards(boardsWithWorkspace);
+      }
     }
     setIsLoading(false);
-  }, [setError]);
+  }, [setError, currentWorkspaceId, isGlobalView, loadWorkspace]);
 
   useEffect(() => {
     loadBoards();
@@ -41,17 +67,20 @@ export function BoardsListScreen() {
     }
 
     setIsCreating(true);
-    const result = await createBoard({ title: newBoardTitle.trim() });
+    const result = await createBoard({ 
+      title: newBoardTitle.trim(),
+      workspace_id: currentWorkspaceId,
+    });
     
     if (result.error) {
       setError(result.error);
     } else if (result.data) {
-      setBoards((prev) => [result.data!, ...prev]);
+      setBoards((prev) => [{ ...result.data!, workspace: null }, ...prev]);
       setNewBoardTitle('');
       setMode('list');
     }
     setIsCreating(false);
-  }, [newBoardTitle, setError]);
+  }, [newBoardTitle, setError, currentWorkspaceId]);
 
   const handleDeleteBoard = useCallback(async () => {
     if (!confirmDelete) return;
@@ -111,9 +140,18 @@ export function BoardsListScreen() {
     );
   }
 
+  const title = isGlobalView 
+    ? 'All Boards' 
+    : workspace 
+      ? `${workspace.icon} ${workspace.name} - Boards` 
+      : 'Boards';
+
   return (
     <Box flexDirection="column" height="100%">
-      <Header title="Boards" subtitle={`${boards.length} boards`} />
+      <Header 
+        title={title} 
+        subtitle={`${boards.length} board${boards.length !== 1 ? 's' : ''}${isGlobalView ? ' (all workspaces)' : ''}`} 
+      />
 
       {mode === 'create' && (
         <Box paddingX={2} marginBottom={1} flexDirection="column">
@@ -168,6 +206,12 @@ export function BoardsListScreen() {
                     {board.title}
                   </Text>
                   <Text dimColor> - Created {formatDate(board.created_at)}</Text>
+                  {isGlobalView && board.workspace && (
+                    <Text color={board.workspace.color as never}> • {board.workspace.icon} {board.workspace.name}</Text>
+                  )}
+                  {isGlobalView && !board.workspace && (
+                    <Text dimColor> • 🌐 Global</Text>
+                  )}
                 </Box>
               );
             })

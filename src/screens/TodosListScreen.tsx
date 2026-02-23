@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Header, StatusBar, LoadingSpinner, ConfirmModal } from '../components/index.js';
-import { useApp } from '../context/index.js';
-import { fetchTodos, deleteTodo, updateTodo } from '../services/todos.js';
+import { useApp, useWorkspace } from '../context/index.js';
+import { fetchTodos, fetchTodosWithWorkspace, deleteTodo, updateTodo } from '../services/todos.js';
 import { formatDate } from '../utils/markdown.js';
-import type { Todo, TodoStatus } from '../types/index.js';
+import type { Todo, TodoWithWorkspace, TodoStatus } from '../types/index.js';
 
 const STATUS_COLORS: Record<TodoStatus, string> = {
   'todo': 'white',
@@ -21,27 +21,54 @@ const STATUS_LABELS: Record<TodoStatus, string> = {
 };
 
 export function TodosListScreen() {
-  const { navigate, selectTodo, setError, error, isCommandPaletteOpen } = useApp();
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [filteredTodos, setFilteredTodos] = useState<Todo[]>([]);
+  const { navigate, selectTodo, setError, error, isCommandPaletteOpen, currentWorkspaceId } = useApp();
+  const { loadWorkspace } = useWorkspace();
+  const [todos, setTodos] = useState<TodoWithWorkspace[]>([]);
+  const [filteredTodos, setFilteredTodos] = useState<TodoWithWorkspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<Todo | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<TodoWithWorkspace | null>(null);
   const [filterStatus, setFilterStatus] = useState<TodoStatus | 'all'>('all');
+  const [workspace, setWorkspace] = useState<{ name: string; icon: string } | null>(null);
+
+  const isGlobalView = currentWorkspaceId === null || currentWorkspaceId === undefined;
 
   const loadTodos = useCallback(async () => {
     setIsLoading(true);
-    const result = await fetchTodos();
-    if (result.error) {
-      setError(result.error);
+    
+    // Load workspace info if we have a current workspace
+    if (currentWorkspaceId) {
+      const ws = await loadWorkspace(currentWorkspaceId);
+      if (ws) {
+        setWorkspace({ name: ws.name, icon: ws.icon });
+      }
     } else {
-      setTodos(result.data || []);
-      setFilteredTodos(result.data || []);
+      setWorkspace(null);
+    }
+    
+    // Fetch todos based on context
+    if (isGlobalView) {
+      const result = await fetchTodosWithWorkspace();
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setTodos(result.data || []);
+        setFilteredTodos(result.data || []);
+      }
+    } else {
+      const result = await fetchTodos(currentWorkspaceId);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        const todosWithWorkspace = (result.data || []).map(t => ({ ...t, workspace: null }));
+        setTodos(todosWithWorkspace);
+        setFilteredTodos(todosWithWorkspace);
+      }
     }
     setIsLoading(false);
-  }, [setError]);
+  }, [setError, currentWorkspaceId, isGlobalView, loadWorkspace]);
 
   useEffect(() => {
     loadTodos();
@@ -173,10 +200,18 @@ export function TodosListScreen() {
   }
 
   const filterLabel = filterStatus === 'all' ? 'All' : filterStatus;
+  const title = isGlobalView 
+    ? 'All Todos' 
+    : workspace 
+      ? `${workspace.icon} ${workspace.name} - Todos` 
+      : 'Todos';
 
   return (
     <Box flexDirection="column" height="100%">
-      <Header title="Todos" subtitle={`${filteredTodos.length} todos • Filter: ${filterLabel}`} />
+      <Header 
+        title={title} 
+        subtitle={`${filteredTodos.length} todo${filteredTodos.length !== 1 ? 's' : ''} • Filter: ${filterLabel}${isGlobalView ? ' (all workspaces)' : ''}`} 
+      />
 
       {isSearching && (
         <Box paddingX={2} marginBottom={1}>
@@ -249,6 +284,12 @@ export function TodosListScreen() {
                         </>
                       )}
                       <Text dimColor> • Updated {formatDate(todo.updated_at)}</Text>
+                      {isGlobalView && todo.workspace && (
+                        <Text color={todo.workspace.color as never}> • {todo.workspace.icon} {todo.workspace.name}</Text>
+                      )}
+                      {isGlobalView && !todo.workspace && (
+                        <Text dimColor> • 🌐 Global</Text>
+                      )}
                     </Box>
                   </Box>
                 </Box>
